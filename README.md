@@ -177,7 +177,11 @@ The application supports runtime configuration through environment variables:
 
 ## API Integration
 
-The application integrates with the Fraud Alert Management API and supports all operations defined in the OpenAPI specification:
+The application integrates with the Fraud Alert Management API and supports all operations defined in the OpenAPI specification.
+
+**API Source Code**: [fraud-alert-management-api](https://github.com/dsanchor/fraud-alert-management-api)
+
+### Supported Operations
 
 - **GET /alerts**: List and filter alerts
 - **GET /alerts/{id}**: Get alert details
