@@ -1,0 +1,178 @@
+<div class="dashboard-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <h1 class="main-title">Fraud alert pipeline</h1>
+  </div>
+
+  <!-- Pipeline Cards -->
+  <div class="pipeline-cards">
+    <!-- Loading state for pipeline data -->
+    <div *ngIf="isLoadingStatistics" class="loading-container">
+      <mat-icon>refresh</mat-icon>
+      <p>Loading statistics...</p>
+    </div>
+
+    <!-- Error state for pipeline data -->
+    <div *ngIf="statisticsError && !isLoadingStatistics" class="error-container">
+      <mat-icon>error</mat-icon>
+      <p>{{ statisticsError }}</p>
+      <button mat-raised-button color="primary" (click)="loadStatistics()">Retry</button>
+    </div>
+
+    <!-- Pipeline cards when data is loaded -->
+    <mat-card *ngFor="let item of pipelineData" class="pipeline-card" [class.clickable]="item.route"
+      [style.display]="!isLoadingStatistics && !statisticsError ? 'block' : 'none'"
+      (click)="navigateToPipelineItem(item)">
+      <mat-card-content>
+        <div class="card-header">
+          <h3>{{ item.title }}</h3>
+          <mat-icon class="arrow-icon" *ngIf="!item.route">arrow_forward</mat-icon>
+        </div>
+        <div class="card-main">
+          <div class="value">{{ item.value }}</div>
+          <div class="change" [ngClass]="item.changeType">{{ item.change }}</div>
+        </div>
+        <div class="subtitle">{{ item.subtitle }}</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Transactions Section -->
+  <div class="transactions-section">
+    <div class="section-header">
+      <h2>Daily bank transactions</h2>
+      <div class="filter-toggle">
+        <div class="toggle-container">
+          <button class="toggle-option" [class.active]="!showOnlyFlagged" (click)="toggleFilter('all')">
+            <mat-icon>list</mat-icon>
+          </button>
+          <button class="toggle-option" [class.active]="showOnlyFlagged" (click)="toggleFilter('flagged')">
+            <mat-icon>flag</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer Transactions Table -->
+    <mat-card class="table-card">
+      <mat-card-content>
+        <!-- Show message when no customer data -->
+        <div *ngIf="customerData.length === 0 && !isLoadingRecentAlerts" class="no-data-message">
+          <mat-icon>info</mat-icon>
+          <p>No customer transaction data available</p>
+        </div>
+
+        <!-- Customer table when data is available -->
+        <table mat-table [dataSource]="customerData" class="customer-table" *ngIf="customerData.length > 0">
+          <!-- Customer ID Column -->
+          <ng-container matColumnDef="customerId">
+            <th mat-header-cell *matHeaderCellDef>Customer ID</th>
+            <td mat-cell *matCellDef="let element">
+              <div class="customer-info">
+                <div class="customer-avatar" [style.background-color]="getCustomerColor(element.customerId)">
+                  {{ element.customerId.charAt(0) }}
+                </div>
+                <div class="customer-details">
+                  <div class="customer-id">{{ element.customerId }}</div>
+                  <div class="customer-country">{{ element.country }}</div>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Transactions Column -->
+          <ng-container matColumnDef="transactions">
+            <th mat-header-cell *matHeaderCellDef>Total Transactions</th>
+            <td mat-cell *matCellDef="let element">{{ element.transactions }}</td>
+          </ng-container>
+
+          <!-- Amount Column -->
+          <ng-container matColumnDef="amount">
+            <th mat-header-cell *matHeaderCellDef>Total Amount (USD)</th>
+            <td mat-cell *matCellDef="let element">${{ element.amount.toFixed(2) }}</td>
+          </ng-container>
+
+          <!-- Average Amount Column -->
+          <ng-container matColumnDef="avgAmount">
+            <th mat-header-cell *matHeaderCellDef>Average Transaction Amount (USD)</th>
+            <td mat-cell *matCellDef="let element">${{ element.avgAmount.toFixed(2) }}</td>
+          </ng-container>
+
+          <!-- Flagged Transactions Column -->
+          <ng-container matColumnDef="flagged">
+            <th mat-header-cell *matHeaderCellDef>Flagged Transactions</th>
+            <td mat-cell *matCellDef="let element">
+              <mat-icon class="flag-icon" [ngClass]="{ 'flagged': element.flagged }">
+                {{ element.flagged ? 'flag' : 'outlined_flag' }}
+              </mat-icon>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Statistics Section -->
+  <div class="statistics-section">
+    <!-- Loading state for statistics -->
+    <div *ngIf="isLoadingStatistics" class="loading-container">
+      <mat-icon>refresh</mat-icon>
+      <p>Loading statistics...</p>
+    </div>
+
+    <!-- Error state for statistics -->
+    <div *ngIf="statisticsError && !isLoadingStatistics" class="error-container">
+      <mat-icon>error</mat-icon>
+      <p>{{ statisticsError }}</p>
+      <button mat-raised-button color="primary" (click)="loadStatistics()">Retry</button>
+    </div>
+
+    <!-- Statistics grid when data is loaded -->
+    <div class="stats-grid" *ngIf="statistics && !isLoadingStatistics && !statisticsError">
+
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <mat-card-title>Average Risk Score</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-value">{{ (statistics.averageRiskScore || 0).toFixed(1) }}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <mat-card-title>By Severity</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="severity-stats" *ngIf="statistics.bySeverity">
+            <div *ngFor="let item of statistics.bySeverity | keyvalue" class="severity-item">
+              <mat-chip [ngClass]="'severity-' + item.key.toLowerCase()" class="clickable-chip"
+                (click)="navigateToAlertsBySeverity(item.key)">
+                {{ item.key }}: {{ item.value }}
+              </mat-chip>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <mat-card-title>By Status</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="status-stats" *ngIf="statistics.byStatus">
+            <div *ngFor="let item of statistics.byStatus | keyvalue" class="status-item">
+              <mat-chip [ngClass]="'status-' + item.key.toLowerCase()" class="clickable-chip"
+                (click)="navigateToAlertsByStatus(item.key)">
+                {{ item.key.replace('_', ' ') }}: {{ item.value }}
+              </mat-chip>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,316 @@
+.alert-detail-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    
+    .header-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      
+      .back-button {
+        margin-top: 8px;
+      }
+      
+      .title-section {
+        h1 {
+          margin: 0 0 8px 0;
+          color: #333;
+          font-weight: 500;
+        }
+        
+        .header-chips {
+          display: flex;
+          gap: 8px;
+          
+          .severity-chip, .status-chip {
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 500;
+            min-height: 24px;
+            border-radius: 12px;
+          }
+        }
+      }
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      
+      button {
+        text-transform: none;
+      }
+    }
+  }
+
+  .content-tabs {
+    .mat-mdc-tab-group {
+      .mat-mdc-tab-body-wrapper {
+        .tab-content {
+          padding: 24px 0;
+        }
+      }
+    }
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .info-card, .add-note-card, .notes-card, .risk-factors-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    mat-card-header {
+      background-color: #f5f5f5;
+      margin: -16px -16px 16px -16px;
+      padding: 16px;
+      border-radius: 12px 12px 0 0;
+      
+      mat-card-title {
+        margin: 0;
+        color: #333;
+        font-weight: 500;
+      }
+    }
+    
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      
+      &:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+      
+      .label {
+        font-weight: 500;
+        color: #666;
+        flex-shrink: 0;
+        min-width: 120px;
+      }
+      
+      .value {
+        color: #333;
+        text-align: right;
+        
+        &.amount {
+          font-weight: 600;
+          color: #1976d2;
+        }
+      }
+      
+      .edit-field {
+        flex: 1;
+        margin-left: 16px;
+      }
+    }
+    
+    .reasoning-text {
+      margin: 0;
+      color: #333;
+      line-height: 1.5;
+      text-align: left;
+    }
+    
+    .risk-score {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      
+      &.high-risk {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+      
+      &.medium-risk {
+        background-color: #fff3e0;
+        color: #f57c00;
+      }
+      
+      &.low-risk {
+        background-color: #e8f5e8;
+        color: #2e7d32;
+      }
+    }
+    
+    .severity-chip, .status-chip, .decision-chip, .history-chip {
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 500;
+      min-height: 28px;
+      border-radius: 14px;
+    }
+  }
+
+  .risk-factors-card {
+    grid-column: 1 / -1; // Span full width
+    
+    .risk-factors {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      
+      .risk-factor-chip {
+        background-color: #fff3e0;
+        color: #f57c00;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 16px;
+        
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+
+  .add-note-card {
+    margin-bottom: 24px;
+    
+    .note-field {
+      width: 100%;
+    }
+    
+    .add-note-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
+      
+      .note-field {
+        flex: 1;
+      }
+      
+      button {
+        height: fit-content;
+        margin-bottom: 1.25em; // Align with form field
+      }
+    }
+  }
+
+  .notes-card {
+    .no-notes {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    mat-list {
+      mat-list-item {
+        border-bottom: 1px solid #f0f0f0;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        mat-icon {
+          color: #666;
+        }
+      }
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    
+    mat-card {
+      text-align: center;
+      padding: 40px;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .alert-detail-container {
+    padding: 16px;
+    
+    .header {
+      flex-direction: column;
+      gap: 16px;
+      
+      .header-left {
+        width: 100%;
+      }
+      
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+    
+    .cards-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .info-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      
+      .label {
+        min-width: auto;
+      }
+      
+      .value {
+        text-align: left;
+      }
+      
+      .edit-field {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+    
+    .add-note-row {
+      flex-direction: column;
+      
+      button {
+        width: 100%;
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .alert-detail-container {
+    padding: 12px;
+    
+    .header-chips {
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .risk-factors {
+      .risk-factor-chip {
+        font-size: 0.8rem;
+      }
+    }
+  }
+}

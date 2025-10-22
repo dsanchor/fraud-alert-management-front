@@ -1,0 +1,202 @@
+<div class="alert-list-container">
+  <div class="header">
+    <h1>Manage and monitor fraud alerts</h1>
+  </div>
+
+  <!-- Filters -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters-row">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onFilterChange()">
+            <mat-option [value]="undefined">All Statuses</mat-option>
+            <mat-option *ngFor="let status of alertStatuses" [value]="status">
+              {{ status.replace('_', ' ') }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Severity</mat-label>
+          <mat-select [(ngModel)]="selectedSeverity" (selectionChange)="onFilterChange()">
+            <mat-option [value]="undefined">All Severities</mat-option>
+            <mat-option *ngFor="let severity of alertSeverities" [value]="severity">
+              {{ severity }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Customer ID</mat-label>
+          <input matInput [(ngModel)]="customerIdFilter" (input)="onFilterChange()" placeholder="Enter customer ID">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Assigned To</mat-label>
+          <input matInput [(ngModel)]="assignedToFilter" (input)="onFilterChange()" placeholder="Enter assignee">
+        </mat-form-field>
+
+        <button mat-raised-button color="warn" (click)="clearFilters()">
+          <mat-icon>clear</mat-icon>
+          Clear Filters
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Bulk Actions -->
+  <mat-card class="bulk-actions-card" *ngIf="selection.selected.length > 0">
+    <mat-card-content>
+      <div class="bulk-actions-row">
+        <span class="selected-count">{{ selection.selected.length }} alert(s) selected</span>
+        
+        <div class="bulk-controls">
+          <mat-form-field appearance="outline" class="bulk-field">
+            <mat-label>Update Status</mat-label>
+            <mat-select [(ngModel)]="bulkUpdateStatus">
+              <mat-option *ngFor="let status of alertStatuses" [value]="status">
+                {{ status.replace('_', ' ') }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="bulk-field">
+            <mat-label>Assign To</mat-label>
+            <input matInput [(ngModel)]="bulkAssignedTo" placeholder="Enter assignee">
+          </mat-form-field>
+
+          <button mat-raised-button color="primary" (click)="bulkUpdate()" [disabled]="!bulkUpdateStatus">
+            Update Selected
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Alerts Table -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      <table mat-table [dataSource]="alerts" class="alerts-table">
+        <!-- Checkbox Column -->
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef>
+            <mat-checkbox (change)="$event ? masterToggle() : null"
+                         [checked]="selection.hasValue() && isAllSelected()"
+                         [indeterminate]="selection.hasValue() && !isAllSelected()">
+            </mat-checkbox>
+          </th>
+          <td mat-cell *matCellDef="let row">
+            <mat-checkbox (click)="$event.stopPropagation()"
+                         (change)="$event ? selection.toggle(row) : null"
+                         [checked]="selection.isSelected(row)">
+            </mat-checkbox>
+          </td>
+        </ng-container>
+
+        <!-- Alert ID Column -->
+        <ng-container matColumnDef="alertId">
+          <th mat-header-cell *matHeaderCellDef>Alert ID</th>
+          <td mat-cell *matCellDef="let element">
+            <a [routerLink]="['/alerts', element.alertId]" class="alert-link">
+              {{ element.alertId }}
+            </a>
+          </td>
+        </ng-container>
+
+        <!-- Severity Column -->
+        <ng-container matColumnDef="severity">
+          <th mat-header-cell *matHeaderCellDef>Severity</th>
+          <td mat-cell *matCellDef="let element">
+            <mat-chip [style.background-color]="getSeverityColor(element.severity)" class="severity-chip">
+              {{ element.severity }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let element">
+            <mat-chip [style.background-color]="getStatusColor(element.status)" class="status-chip">
+              {{ element.status?.replace('_', ' ') }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Risk Score Column -->
+        <ng-container matColumnDef="riskScore">
+          <th mat-header-cell *matHeaderCellDef>Risk Score</th>
+          <td mat-cell *matCellDef="let element">
+            <div class="risk-score" [ngClass]="{
+              'high-risk': (element.riskScore || 0) >= 8,
+              'medium-risk': (element.riskScore || 0) >= 5 && (element.riskScore || 0) < 8,
+              'low-risk': (element.riskScore || 0) < 5
+            }">
+              {{ (element.riskScore || 0).toFixed(1) }}
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Customer Column -->
+        <ng-container matColumnDef="customer">
+          <th mat-header-cell *matHeaderCellDef>Customer</th>
+          <td mat-cell *matCellDef="let element">
+            <div class="customer-info" *ngIf="element.customer">
+              <div class="customer-name">{{ element.customer.name }}</div>
+              <div class="customer-details">
+                ID: {{ element.customer.customerId }} | {{ element.customer.country }}
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Transaction Column -->
+        <ng-container matColumnDef="transaction">
+          <th mat-header-cell *matHeaderCellDef>Transaction</th>
+          <td mat-cell *matCellDef="let element">
+            <div class="transaction-info" *ngIf="element.transaction">
+              <div class="transaction-amount">
+                {{ formatCurrency(element.transaction.amount, element.transaction.currency) }}
+              </div>
+              <div class="transaction-id">{{ element.transaction.transactionId }}</div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Created At Column -->
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef>Created</th>
+          <td mat-cell *matCellDef="let element">{{ formatDate(element.createdAt) }}</td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-icon-button [routerLink]="['/alerts', element.alertId]" matTooltip="View Details">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button [routerLink]="['/alerts', element.alertId, 'edit']" matTooltip="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+            [class.selected-row]="selection.isSelected(row)">
+        </tr>
+      </table>
+
+      <!-- Paginator -->
+      <mat-paginator 
+        [length]="totalAlerts"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="[10, 20, 50, 100]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>

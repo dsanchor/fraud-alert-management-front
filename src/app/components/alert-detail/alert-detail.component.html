@@ -1,0 +1,254 @@
+<div class="alert-detail-container" *ngIf="alert">
+  <div class="header">
+    <div class="header-left">
+      <button mat-icon-button (click)="goBack()" class="back-button">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div class="title-section">
+        <h1>Alert {{ alert.alertId }}</h1>
+        <div class="header-chips">
+          <mat-chip [style.background-color]="getSeverityColor(alert.severity)" class="severity-chip">
+            {{ alert.severity }}
+          </mat-chip>
+          <mat-chip [style.background-color]="getStatusColor(alert.status)" class="status-chip">
+            {{ alert.status?.replace('_', ' ') }}
+          </mat-chip>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="toggleEditMode()" *ngIf="!isEditMode">
+        <mat-icon>edit</mat-icon>
+        Edit Alert
+      </button>
+      <button mat-raised-button color="primary" (click)="saveAlert()" *ngIf="isEditMode">
+        <mat-icon>save</mat-icon>
+        Save Changes
+      </button>
+      <button mat-stroked-button (click)="toggleEditMode()" *ngIf="isEditMode">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <div class="content-tabs">
+    <mat-tab-group>
+      <!-- Overview Tab -->
+      <mat-tab label="Overview">
+        <div class="tab-content">
+          <div class="cards-grid">
+            <!-- Alert Information -->
+            <mat-card class="info-card">
+              <mat-card-header>
+                <mat-card-title>Alert Information</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-row" *ngIf="!isEditMode">
+                  <span class="label">Status:</span>
+                  <mat-chip [style.background-color]="getStatusColor(alert.status)" class="status-chip">
+                    {{ alert.status?.replace('_', ' ') }}
+                  </mat-chip>
+                </div>
+                <div class="info-row" *ngIf="isEditMode">
+                  <mat-form-field appearance="outline" class="edit-field">
+                    <mat-label>Status</mat-label>
+                    <mat-select [(ngModel)]="editableAlert.status">
+                      <mat-option *ngFor="let status of alertStatuses" [value]="status">
+                        {{ status.replace('_', ' ') }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <div class="info-row">
+                  <span class="label">Risk Score:</span>
+                  <div class="risk-score" [ngClass]="{
+                    'high-risk': (alert.riskScore || 0) >= 8,
+                    'medium-risk': (alert.riskScore || 0) >= 5 && (alert.riskScore || 0) < 8,
+                    'low-risk': (alert.riskScore || 0) < 5
+                  }">
+                    {{ (alert.riskScore || 0).toFixed(1) }}/10
+                  </div>
+                </div>
+
+                <div class="info-row" *ngIf="!isEditMode">
+                  <span class="label">Assigned To:</span>
+                  <span class="value">{{ alert.assignedTo || 'Unassigned' }}</span>
+                </div>
+                <div class="info-row" *ngIf="isEditMode">
+                  <mat-form-field appearance="outline" class="edit-field">
+                    <mat-label>Assigned To</mat-label>
+                    <input matInput [(ngModel)]="editableAlert.assignedTo" placeholder="Enter assignee email">
+                  </mat-form-field>
+                </div>
+
+                <div class="info-row">
+                  <span class="label">Created:</span>
+                  <span class="value">{{ formatDate(alert.createdAt) }}</span>
+                </div>
+
+                <div class="info-row">
+                  <span class="label">Last Updated:</span>
+                  <span class="value">{{ formatDate(alert.updatedAt) }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Customer Information -->
+            <mat-card class="info-card" *ngIf="alert.customer">
+              <mat-card-header>
+                <mat-card-title>Customer Information</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-row">
+                  <span class="label">Customer ID:</span>
+                  <span class="value">{{ alert.customer.customerId }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Name:</span>
+                  <span class="value">{{ alert.customer.name }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Country:</span>
+                  <span class="value">{{ alert.customer.country }}</span>
+                </div>
+                <div class="info-row" *ngIf="alert.customer.deviceTrustScore !== undefined">
+                  <span class="label">Device Trust Score:</span>
+                  <span class="value">{{ (alert.customer.deviceTrustScore * 100).toFixed(1) }}%</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Fraud History:</span>
+                  <mat-chip [color]="alert.customer.hasFraudHistory ? 'warn' : 'primary'" class="history-chip">
+                    {{ alert.customer.hasFraudHistory ? 'Yes' : 'No' }}
+                  </mat-chip>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Transaction Information -->
+            <mat-card class="info-card" *ngIf="alert.transaction">
+              <mat-card-header>
+                <mat-card-title>Transaction Information</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-row">
+                  <span class="label">Transaction ID:</span>
+                  <span class="value">{{ alert.transaction.transactionId }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Amount:</span>
+                  <span class="value amount">{{ formatCurrency(alert.transaction.amount, alert.transaction.currency) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Destination Country:</span>
+                  <span class="value">{{ alert.transaction.destinationCountry }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Timestamp:</span>
+                  <span class="value">{{ formatDate(alert.transaction.timestamp) }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Decision Information -->
+            <mat-card class="info-card" *ngIf="alert.decision">
+              <mat-card-header>
+                <mat-card-title>Decision</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-row">
+                  <span class="label">Action:</span>
+                  <mat-chip [style.background-color]="getDecisionColor(alert.decision.action)" class="decision-chip">
+                    {{ alert.decision.action }}
+                  </mat-chip>
+                </div>
+                <div class="info-row">
+                  <span class="label">Reasoning:</span>
+                  <p class="reasoning-text">{{ alert.decision.reasoning }}</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Risk Factors -->
+          <mat-card class="risk-factors-card" *ngIf="alert.riskFactors && alert.riskFactors.length > 0">
+            <mat-card-header>
+              <mat-card-title>Risk Factors</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="risk-factors">
+                <mat-chip *ngFor="let factor of alert.riskFactors" class="risk-factor-chip">
+                  <mat-icon>warning</mat-icon>
+                  {{ factor }}
+                </mat-chip>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Notes Tab -->
+      <mat-tab label="Notes">
+        <div class="tab-content">
+          <!-- Add Note (Edit Mode) -->
+          <mat-card class="add-note-card" *ngIf="isEditMode">
+            <mat-card-header>
+              <mat-card-title>Add Note</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <mat-form-field appearance="outline" class="note-field">
+                <mat-label>Note</mat-label>
+                <textarea matInput [(ngModel)]="editableAlert.notes" rows="3" placeholder="Enter note..."></textarea>
+              </mat-form-field>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Add Note (Standalone) -->
+          <mat-card class="add-note-card" *ngIf="!isEditMode">
+            <mat-card-header>
+              <mat-card-title>Add Note</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="add-note-row">
+                <mat-form-field appearance="outline" class="note-field">
+                  <mat-label>Note</mat-label>
+                  <textarea matInput [(ngModel)]="newNote" rows="3" placeholder="Enter note..."></textarea>
+                </mat-form-field>
+                <button mat-raised-button color="primary" (click)="addNote()" [disabled]="!newNote.trim()">
+                  Add Note
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Notes List -->
+          <mat-card class="notes-card">
+            <mat-card-header>
+              <mat-card-title>Notes History</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <mat-list *ngIf="notes.length > 0; else noNotes">
+                <mat-list-item *ngFor="let note of notes">
+                  <mat-icon matListItemIcon>note</mat-icon>
+                  <div matListItemTitle>{{ note }}</div>
+                </mat-list-item>
+              </mat-list>
+              <ng-template #noNotes>
+                <p class="no-notes">No notes available for this alert.</p>
+              </ng-template>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>
+
+<!-- Loading state -->
+<div class="loading-container" *ngIf="!alert">
+  <mat-card>
+    <mat-card-content>
+      <p>Loading alert details...</p>
+    </mat-card-content>
+  </mat-card>
+</div>
