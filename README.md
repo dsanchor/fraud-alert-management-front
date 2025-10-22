@@ -10,23 +10,15 @@ An Angular web application for managing fraud alerts in financial systems. This 
 - **Responsive Design**: Mobile-friendly interface built with Angular Material
 - **Real-time Updates**: Integration with fraud alert management API
 
-## Screenshots
-
-### Dashboard
-![Dashboard](https://github.com/user-attachments/assets/eaba7eff-85a2-40a3-af35-fcaaef6365ba)
-
-### Alert List
-![Alert List](https://github.com/user-attachments/assets/a548115c-b4de-43d1-ab2b-175bc478d226)
-
-### Alert Details
-![Alert Details](https://github.com/user-attachments/assets/c2b6ff2c-6cc2-4c92-a4c4-27eab1f046db)
-
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (version 18 or higher)
+- Node.js (version 22 or higher)
 - npm (comes with Node.js)
+- Docker (optional, for containerized deployment)
+
+## Running Locally
 
 ### Installation
 
@@ -41,10 +33,17 @@ cd fraud-alert-management-front
 npm install
 ```
 
-3. Configure the backend API endpoint (optional):
+3. Configure environment variables (optional):
+
+Create a `.env` file in the root directory (copy from `.env.example`):
 ```bash
-# Set the API URL environment variable
-export API_URL=https://your-api-endpoint.com/v1
+cp .env.example .env
+```
+
+Edit `.env` with your values:
+```env
+API_URL=https://your-api-url.com
+API_KEY=your-api-key
 ```
 
 4. Start the development server:
@@ -54,6 +53,112 @@ npm start
 
 The application will be available at `http://localhost:4200`.
 
+### Available Scripts
+
+- `npm start`: Start development server
+- `npm run build`: Build for production
+- `npm run build:dev`: Build for development
+- `npm test`: Run unit tests
+
+## Running with Docker
+
+### Build the Docker Image
+
+```bash
+docker build -t fraud-alert-management-front:latest .
+```
+
+### Run the Container
+
+#### Option 1: Using environment variables directly
+
+```bash
+docker run -d \
+  -p 8080:80 \
+  -e API_URL=https://your-api-url.com \
+  -e API_KEY=your-api-key \
+  --name fraud-alert-app \
+  fraud-alert-management-front:latest
+```
+
+#### Option 2: Using an .env file
+
+Create a `.env` file (copy from `.env.example`):
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your values:
+```env
+API_URL=https://your-api-url.com
+API_KEY=your-api-key
+```
+
+Run with the .env file:
+```bash
+docker run -d \
+  -p 8080:80 \
+  --env-file .env \
+  --name fraud-alert-app \
+  fraud-alert-management-front:latest
+```
+
+#### Option 3: Using Docker Compose
+
+Create a `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  fraud-alert-app:
+    build: .
+    ports:
+      - "8080:80"
+    env_file:
+      - .env
+    restart: unless-stopped
+```
+
+Run with Docker Compose:
+```bash
+docker-compose up -d
+```
+
+### Access the Application
+
+Open your browser and navigate to:
+```
+http://localhost:8080
+```
+
+### Docker Commands
+
+#### View logs
+```bash
+docker logs fraud-alert-app
+```
+
+#### Stop the container
+```bash
+docker stop fraud-alert-app
+```
+
+#### Start the container
+```bash
+docker start fraud-alert-app
+```
+
+#### Remove the container
+```bash
+docker rm -f fraud-alert-app
+```
+
+#### View environment variables in running container
+```bash
+docker exec fraud-alert-app cat /usr/share/nginx/html/assets/env.js
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -61,18 +166,14 @@ The application will be available at `http://localhost:4200`.
 The application supports runtime configuration through environment variables:
 
 - `API_URL`: Backend API endpoint URL (default: `http://localhost:8080/v1`)
+- `API_KEY`: API subscription key for authentication
 
-### Setting Environment Variables
+### How Environment Variables Work
 
-#### Development
-```bash
-# For development
-export API_URL=http://localhost:8080/v1
-npm start
-```
-
-#### Production
-For production deployments, you can set environment variables through your deployment platform or by modifying the `window.env` object in the browser.
+1. **Build Stage**: The Dockerfile uses Node.js to build the Angular app
+2. **Runtime Stage**: The built app is served by Nginx
+3. **Environment Injection**: The `docker-entrypoint.sh` script creates `/assets/env.js` with the environment variables at container startup
+4. **Angular Usage**: The app reads `window.env.API_URL` and `window.env.API_KEY` from the injected script
 
 ## API Integration
 
@@ -86,16 +187,7 @@ The application integrates with the Fraud Alert Management API and supports all 
 - **GET /customers/{id}/alerts**: Get customer alert history
 - **POST /alerts/{id}/notes**: Add notes to alerts
 
-## Development
-
-### Available Scripts
-
-- `npm start`: Start development server
-- `npm run build`: Build for production
-- `npm run build:dev`: Build for development
-- `npm test`: Run unit tests
-
-### Project Structure
+## Project Structure
 
 ```
 src/
@@ -134,23 +226,115 @@ src/
 
 ## Deployment
 
-### Production Build
+### CI/CD with GitHub Actions
+
+The project includes a GitHub Actions workflow that automatically builds and pushes Docker images to GitHub Container Registry (ghcr.io) on every push to the main branch.
+
+#### What the Workflow Does
+
+- Builds the Docker image on push to `main` branch or when a version tag is created
+- Pushes the image to GitHub Container Registry (ghcr.io)
+- Creates multiple tags:
+  - `latest` for main branch
+  - `v1.0.0`, `v1.0`, `v1` for version tags
+  - `main-<sha>` for specific commits
+- Supports multi-platform builds (amd64, arm64)
+- Caches layers for faster builds
+
+#### Using the Pre-built Image
+
+Pull and run the latest image from GitHub Container Registry:
 
 ```bash
-npm run build
+# Pull the image
+docker pull ghcr.io/dsanchor/fraud-alert-management-front:latest
+
+# Run the container
+docker run -d \
+  -p 8080:80 \
+  -e API_URL=https://your-api-url.com \
+  -e API_KEY=your-api-key \
+  --name fraud-alert-app \
+  ghcr.io/dsanchor/fraud-alert-management-front:latest
 ```
 
-The build artifacts will be stored in the `dist/` directory.
-
-### Docker Deployment
-
-```dockerfile
-FROM nginx:alpine
-COPY dist/fraud-alert-app /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+Or use a specific version:
+```bash
+docker pull ghcr.io/dsanchor/fraud-alert-management-front:v1.0.0
 ```
+
+#### Creating a Release
+
+To trigger a versioned build:
+
+```bash
+# Create and push a tag
+git tag -a v1.0.0 -m "Release version 1.0.0"
+git push origin v1.0.0
+```
+
+This will create images with tags: `v1.0.0`, `v1.0`, `v1`, and `latest`
+
+### Manual Container Registry Push
+
+#### GitHub Container Registry
+
+```bash
+# Login to GitHub Container Registry
+echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+
+# Tag and push
+docker tag fraud-alert-management-front:latest ghcr.io/dsanchor/fraud-alert-management-front:latest
+docker push ghcr.io/dsanchor/fraud-alert-management-front:latest
+```
+
+#### Docker Hub
+```bash
+docker tag fraud-alert-management-front:latest yourusername/fraud-alert-management-front:latest
+docker push yourusername/fraud-alert-management-front:latest
+```
+
+#### Azure Container Registry
+```bash
+# Login to ACR
+az acr login --name yourregistry
+
+# Tag and push
+docker tag fraud-alert-management-front:latest yourregistry.azurecr.io/fraud-alert-management-front:latest
+docker push yourregistry.azurecr.io/fraud-alert-management-front:latest
+```
+
+## Troubleshooting
+
+### Docker Issues
+
+#### Check if environment variables are injected
+```bash
+docker exec fraud-alert-app cat /usr/share/nginx/html/assets/env.js
+```
+
+#### Check Nginx logs
+```bash
+docker logs fraud-alert-app
+```
+
+#### Access container shell
+```bash
+docker exec -it fraud-alert-app sh
+```
+
+#### Rebuild without cache
+```bash
+docker build --no-cache -t fraud-alert-management-front:latest .
+```
+
+## Security Notes
+
+⚠️ **Important**: 
+- Never commit `.env` file to git (it's in `.gitignore`)
+- Keep your API keys secure
+- Use Docker secrets or Azure Key Vault in production
+- The entrypoint script only shows first 10 characters of API_KEY in logs
 
 ## Contributing
 
