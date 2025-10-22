@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule } from '@angular/material/paginator';
@@ -15,12 +15,12 @@ import { FormsModule } from '@angular/forms';
 import { SelectionModel } from '@angular/cdk/collections';
 
 import { AlertService } from '../../services/alert.service';
-import { 
-  AlertSummaryDto, 
+import {
+  AlertSummaryDto,
   PagedResponseAlertSummaryDto,
   AlertStatus,
   AlertSeverity,
-  BulkUpdateRequest 
+  BulkUpdateRequest
 } from '../../models/alert.models';
 
 @Component({
@@ -47,33 +47,52 @@ import {
 export class AlertListComponent implements OnInit {
   alerts: AlertSummaryDto[] = [];
   displayedColumns: string[] = ['select', 'alertId', 'severity', 'status', 'riskScore', 'customer', 'transaction', 'createdAt', 'actions'];
-  
+
   // Pagination
   totalAlerts = 0;
   currentPage = 1;
   pageSize = 20;
-  
+
   // Filters
   selectedStatus?: AlertStatus;
   selectedSeverity?: AlertSeverity;
   customerIdFilter = '';
   assignedToFilter = '';
-  
+
   // Selection
   selection = new SelectionModel<AlertSummaryDto>(true, []);
-  
+
   // Enum values for dropdowns
   alertStatuses = Object.values(AlertStatus);
   alertSeverities = Object.values(AlertSeverity);
-  
+
   // Bulk update
   bulkUpdateStatus?: AlertStatus;
   bulkAssignedTo = '';
 
-  constructor(private alertService: AlertService) {}
+  constructor(
+    private alertService: AlertService,
+    private route: ActivatedRoute
+  ) { }
 
   ngOnInit(): void {
-    this.loadAlerts();
+    // Subscribe to query parameters to apply filters from navigation
+    this.route.queryParams.subscribe(params => {
+      if (params['status']) {
+        this.selectedStatus = params['status'] as AlertStatus;
+      }
+      if (params['severity']) {
+        this.selectedSeverity = params['severity'] as AlertSeverity;
+      }
+      if (params['customerId']) {
+        this.customerIdFilter = params['customerId'];
+      }
+      if (params['assignedTo']) {
+        this.assignedToFilter = params['assignedTo'];
+      }
+
+      this.loadAlerts();
+    });
   }
 
   loadAlerts(): void {
